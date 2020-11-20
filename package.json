@@ -8,6 +8,10 @@
   },
   "dependencies": {
     "discord.js": "^12.4.1",
+    "dotenv": "^8.2.0",
     "request": "2.81.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
   }
 }
