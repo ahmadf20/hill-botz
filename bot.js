@@ -1,10 +1,20 @@
 require('dotenv').config();
 
 const Discord = require('discord.js');
+const math = require('mathjs');
 
 const client = new Discord.Client();
 
 const prefix = "h.";
+
+/// Range ASCII:
+/// - ALL CHAR (including special char) => 32 s/d 126 (0-94) ---- mod 95 + 32
+/// - ALL ALPHABET CAPS => 65 s/d 90 (0-25) ---- mod 26 + 65
+/// ex: FRIDAY => PQCFKU (key=[[7,19],[8,3]], mod=26, offset=65)
+
+const mod = 26; 
+const offset = 65;
+const matrixK = math.matrix([[7,19],[8,3]]); 
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -24,24 +34,8 @@ client.on('message', message => {
         message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
     }
 
-    else if(command === 'sum'){
-        // console.log(args);
-        const numArgs = args.map(x => parseFloat(x));
-        const sum = numArgs.reduce((counter, x) => counter += x);
-        message.reply(`The sum of all the arguments you provided is ${sum}!`);
-    }
-
     else if (command === 'server') {
         message.channel.send(`Server name: ${message.guild.name}\nTotal members: ${message.guild.memberCount}`);
-    }
-
-    else if (command === 'kick') {
-        if (!message.mentions.users.size) {
-            return message.reply('you need to tag a user in order to kick them!');
-        }
-
-        const taggedUser = message.mentions.users.first();
-        message.channel.send(`You wanted to kick: ${taggedUser}`);
     }
 
     else if (command === 'avatar') {
@@ -71,7 +65,44 @@ client.on('message', message => {
 			console.error(err);
 			message.channel.send('there was an error trying to prune messages in this channel!');
 		});
-	}
+    }
+
+    // encrypt message
+    else if(command === 'en'){
+
+        
+        const plainText = args.join(' ');
+        let cipherText = '';
+        
+        let strLen = plainText.length;
+
+        if(strLen % 2 == 1) {
+            plainText += '#';
+            strLen += 1;
+        }
+
+        let matrixP = math.matrix();
+
+        let count = 0;
+        for (let i = 0; i < plainText.length/2; i++) {
+            for (let j = 0; j < 2; j++) {
+                matrixP.subset(math.index(i,j), (plainText[count].charCodeAt(0) - offset) % mod);
+                // console.log(`${plainText[count]} : ${plainText[count].charCodeAt(0)} % 26 ${(plainText[count].charCodeAt(0) - 65) % 26}`);
+                count++;
+            }
+        }
+
+        let matrixC = math.multiply(matrixP, matrixK);
+
+        for (let i = 0; i < plainText.length/2; i++) {
+            for (let j = 0; j < 2; j++) {
+                cipherText += String.fromCharCode((math.subset(matrixC,math.index(i,j)) % mod) + offset); 
+            }
+        }
+
+        message.channel.send(`\`${cipherText}\``);
+
+    }
 
 });
 
