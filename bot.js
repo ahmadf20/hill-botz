@@ -5,7 +5,7 @@ const math = require('mathjs');
 
 const client = new Discord.Client();
 
-const prefix = "h.";
+const prefix = "h."; //test
 
 /// Range ASCII:
 /// - ALL CHAR (including special char) => 32 s/d 126 (0-94) ---- mod 95 + 32
@@ -69,8 +69,6 @@ client.on('message', message => {
 
     // encrypt message
     else if(command === 'en'){
-
-        
         const plainText = args.join(' ');
         let cipherText = '';
         
@@ -100,10 +98,155 @@ client.on('message', message => {
             }
         }
 
-        message.channel.send(`\`${cipherText}\``);
+        message.channel.send(`cipherText: \`${cipherText}\``);
+    }
+    
+    else if (command === 'dec'){
+        let plainText = '';
 
+        const cipherText =  args.join(' ');
+
+        let strLen = cipherText.length;
+
+        if(strLen % 2 == 1) {
+            cipherText += '#';
+            strLen += 1;
+        }
+
+        const invK = getMatrixInverse(matrixK);
+
+        let matrixC = math.matrix();
+
+        let count = 0;
+        for (let i = 0; i < cipherText.length/2; i++) {
+            for (let j = 0; j < 2; j++) {
+                matrixC.subset(math.index(i,j), (cipherText[count].charCodeAt(0) - offset) % mod);
+                count++;
+            }
+        }
+
+        let matrixP = math.multiply(matrixC, invK);
+
+        for (let i = 0; i < cipherText.length/2; i++) {
+            for (let j = 0; j < 2; j++) {
+                
+                plainText += String.fromCharCode((math.subset(matrixP, math.index(i,j)) % mod) + offset); 
+            }
+        }
+        
+        message.channel.send(`PlainText: \`${plainText}\``);
+    }
+  
+    //for testing purpose
+    else if (command === 'gcd'){
+      const a = parseInt(args[0]);
+      const b = parseInt(args[1]);
+
+      const result = gcd(a,b);
+
+      message.channel.send(`HASIL: \`${result}\``);
     }
 
+    else if (command === 'inv'){
+      const a = parseInt(args[0]);
+      const b = parseInt(args[1]);
+
+      const result = invMod(a,b);
+
+      message.channel.send(`HASIL: \`${result}\``);
+    }
+    
 });
 
-client.login(process.env.BOT_TOKEN);
+function getMatrixInverse(a){
+  
+  var key = a;
+  var tempKey = math.matrix();
+
+  tempKey.subset(math.index(0,0), a.subset(math.index(1,1)));
+  tempKey.subset(math.index(1,1), a.subset(math.index(0,0)))
+  tempKey.subset(math.index(0,1), a.subset(math.index(0,1))*-1); 
+  tempKey.subset(math.index(1,0), a.subset(math.index(1,0))*-1);
+
+  var det = math.det(key);
+  var detInv = 0; 
+  var flag = 0;
+
+  for (let i = 0; i < 26; i++)
+  {
+
+      flag = math.mod((det * i), 26);
+
+      if (flag == 1) 
+      {
+          detInv = i; 
+      }
+  }
+
+  var invKey = math.matrix();
+
+  for (let i = 0; i < 2; i++)
+      for (let j = 0; j < 2; j++) 
+      {
+          if (tempKey.subset(math.index(i,j)) < 0)
+          {
+              var tempNum = tempKey.subset(math.index(i,j)) * detInv;
+              var tempN = math.mod(tempNum, mod);
+              invKey.subset(math.index(i,j), tempN); 
+          }
+          else
+          {
+              invKey.subset(math.index(i,j), tempKey.subset(math.index(i,j)) * detInv % mod); 
+          }
+      }  
+
+  return invKey;
+}
+
+function gcd(a, b){
+  if(b < a) {
+    [a, b] = [b, a];
+  }
+  do {
+    var temp = a % b;
+    a = b;
+    b = temp;
+  }
+  while(b != 0);
+
+  return (a == 1);
+}
+
+function invMod(m, n){
+  var t0=0;
+  var t1=1;
+  var invers;
+  var q;
+  var r = 0 ;
+  var b = m;
+
+  while(r != 1){
+    q = math.floor(m/n);
+    r = m % n;
+    invers = t0 - q * t1;
+    
+    if(invers<0)
+    {
+      invers = b - (math.abs(invers) % b);
+    } 
+    else
+    {
+      invers %= b;
+    }
+
+    t0 = t1;
+    t1 = invers;
+    m = n;
+    n = r;
+  }
+
+  return invers;
+}
+
+
+client.login(process.env.BOT_TOKEN); 
