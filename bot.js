@@ -14,7 +14,8 @@ const prefix = "h.";
 
 const mod = 95;
 const offset = 32;
-const matrixK = math.matrix([[7, 19], [8, 3]]);
+const matrixK =
+  math.matrix([[7, 19], [8, 3]]);
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -42,6 +43,42 @@ client.on('message', message => {
     } else {
       message.channel.send(`Server name: ${message.guild.name}\nTotal members: ${message.guild.memberCount}`);
     }
+  }
+
+  else if (command === 'help') {
+    const embedMessage = {
+      color: 0x0099ff,
+      title: `Help Command`,
+      description: `
+      Current commands list:
+
+      - \`help\` - Show all commands
+      - \`ping\` - Ping!
+      - \`server\` - Show server info
+
+      - \`prune\` - Bulk delete messages
+        Usage : \`prune <number of message>\`
+
+      - \`en\` - Encrypt Message
+        Usage : \`en [$<4 letter of key>] <message>\`
+        
+        - \`dec\` - Decrypt Message
+        Usage : \`dec [$<4 letter of key>] <message>\`
+      
+      Use prefix \`h.\`!
+      Paremeter in \`[param]\` is optional
+      Parameter in \`<param>\` is required
+      `,
+      thumbnail: {
+        url: 'https://image.flaticon.com/icons/png/512/1995/1995719.png',
+      },
+      timestamp: new Date(),
+      footer: {
+        text: 'by Hillsbot',
+      },
+    };
+
+    message.channel.send({ embed: embedMessage });
   }
 
   else if (command === 'avatar') {
@@ -80,6 +117,27 @@ client.on('message', message => {
 
     let strLen = plainText.length;
 
+    let localK;
+
+    if (plainText[0] === '$') {
+      let count = 0;
+      let argsTemp = plainText.split(/ +/);
+      let keyString = argsTemp.shift().toLowerCase();
+      plainText = argsTemp.join(' ');
+
+      keyString += 'KEYK'; //handle (keyString.length < 4)
+
+      localK = math.matrix();
+
+      for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < 2; j++) {
+          localK.subset(math.index(i, j), (keyString[count].charCodeAt(0) - offset) % mod);
+          count++;
+        }
+      }
+      console.log(localK);
+    }
+
     if (strLen % 2 == 1) {
       plainText += '#';
       strLen += 1;
@@ -96,7 +154,13 @@ client.on('message', message => {
       }
     }
 
-    let matrixC = math.multiply(matrixP, matrixK);
+    let matrixC;
+
+    if (localK) {
+      matrixC = math.multiply(matrixP, localK);
+    } else {
+      matrixC = math.multiply(matrixP, matrixK);
+    }
 
     for (let i = 0; i < plainText.length / 2; i++) {
       for (let j = 0; j < 2; j++) {
@@ -108,7 +172,7 @@ client.on('message', message => {
       color: 0x0099ff,
       title: 'Encrypted Message',
       author: {
-        name: `${message.author.username}`,
+        name: `${message.author.tag}`,
         icon_url: `${message.author.displayAvatarURL({ format: "png", dynamic: true })}`,
       },
       description: `\`\`\`${cipherText}\`\`\``,
@@ -140,7 +204,34 @@ client.on('message', message => {
       strLen += 1;
     }
 
-    const invK = getMatrixInverse(matrixK);
+    let localK;
+
+    if (cipherText[0] === '$') {
+      let count = 0;
+      let argsTemp = cipherText.split(/ +/);
+      let keyString = argsTemp.shift().toLowerCase();
+      cipherText = argsTemp.join(' ');
+
+      keyString += 'KEYK'; //handle (keyString.length < 4)
+
+      localK = math.matrix();
+
+      for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < 2; j++) {
+          localK.subset(math.index(i, j), (keyString[count].charCodeAt(0) - offset) % mod);
+          count++;
+        }
+      }
+      console.log(localK);
+    }
+
+    let invK;
+
+    if (localK) {
+      invK = getMatrixInverse(localK);
+    } else {
+      invK = getMatrixInverse(matrixK);
+    }
 
     let matrixC = math.matrix();
 
@@ -169,7 +260,7 @@ client.on('message', message => {
       color: 0xDE190F,
       title: 'Decrypted Message',
       author: {
-        name: `${message.author.username}`,
+        name: `${message.author.tag}`,
         icon_url: `${message.author.displayAvatarURL({ format: "png", dynamic: true })}`,
       },
       description: `\`\`\`${plainText}\`\`\``,
@@ -190,9 +281,9 @@ client.on('message', message => {
   }
 
   //TODO
-  //![ ] storing text with embed (usage ex: storing pass)
-  //![ ] able to set their own key
-  //[ ] create a list of command + usage example
+  //![X] storing text with embed (usage ex: storing pass)
+  //![X] able to set their own key
+  //![X] create a list of command + usage example
 
   //for testing purposes
   else if (command === 'gcd') {
