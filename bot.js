@@ -5,15 +5,15 @@ const math = require('mathjs');
 
 const client = new Discord.Client();
 
-const prefix = "h."; //test
+const prefix = "h."; 
 
 /// Range ASCII:
 /// - ALL CHAR (including special char) => 32 s/d 126 (0-94) ---- mod 95 + 32
 /// - ALL ALPHABET CAPS => 65 s/d 90 (0-25) ---- mod 26 + 65
 /// ex: FRIDAY => PQCFKU (key=[[7,19],[8,3]], mod=26, offset=65)
 
-const mod = 26; 
-const offset = 65;
+const mod = 95; 
+const offset = 32;
 const matrixK = math.matrix([[7,19],[8,3]]); 
 
 client.on('ready', () => {
@@ -29,13 +29,19 @@ client.on('message', message => {
 
     console.log(command);
 
+    const isDM = message.guild === null;
+
     if (command === 'ping') {
         const timeTaken = Date.now() - message.createdTimestamp;
         message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
     }
 
     else if (command === 'server') {
+      if(isDM){
+        message.channel.send(`Your avatar: <${message.author.displayAvatarURL({ format: "png", dynamic: true })}>`);
+      } else {
         message.channel.send(`Server name: ${message.guild.name}\nTotal members: ${message.guild.memberCount}`);
+      }
     }
 
     else if (command === 'avatar') {
@@ -52,7 +58,7 @@ client.on('message', message => {
         message.channel.send(avatarList);
     }
 
-    else if (command === 'prune') {
+    else if (command === 'prune' && !isDM) {
 		const amount = parseInt(args[0]) + 1;
 
 		if (isNaN(amount)) {
@@ -69,7 +75,7 @@ client.on('message', message => {
 
     // encrypt message
     else if(command === 'en'){
-        const plainText = args.join(' ');
+        let plainText = args.join(' ');
         let cipherText = '';
         
         let strLen = plainText.length;
@@ -98,13 +104,18 @@ client.on('message', message => {
             }
         }
 
-        message.channel.send(`cipherText: \`${cipherText}\``);
+        message.channel.send(`\`${cipherText}\``);
+        if(!isDM){
+          message.channel.bulkDelete(1, true).catch(err => {
+            console.error(err);
+          });
+        }
     }
     
     else if (command === 'dec'){
         let plainText = '';
 
-        const cipherText =  args.join(' ');
+        let cipherText =  args.join(' ');
 
         let strLen = cipherText.length;
 
@@ -133,11 +144,25 @@ client.on('message', message => {
                 plainText += String.fromCharCode((math.subset(matrixP, math.index(i,j)) % mod) + offset); 
             }
         }
+
+        if(plainText[plainText.length-1] == '#'){
+          plainText = plainText.substr(0, plainText.length - 1);
+        }
         
-        message.channel.send(`PlainText: \`${plainText}\``);
+        message.channel.send(`\`${plainText}\``);
+        if(!isDM){
+          message.channel.bulkDelete(1, true).catch(err => {
+            console.error(err);
+          });
+        }
     }
+
+    //TODO
+    //![ ] storing text with embed (usage ex: storing pass)
+    //![ ] able to set their own key
+    //[ ] create a list of command + usage example
   
-    //for testing purpose
+    //for testing purposes
     else if (command === 'gcd'){
       const a = parseInt(args[0]);
       const b = parseInt(args[1]);
@@ -172,10 +197,10 @@ function getMatrixInverse(a){
   var detInv = 0; 
   var flag = 0;
 
-  for (let i = 0; i < 26; i++)
+  for (let i = 0; i < mod; i++)
   {
 
-      flag = math.mod((det * i), 26);
+      flag = math.mod((det * i), mod);
 
       if (flag == 1) 
       {
