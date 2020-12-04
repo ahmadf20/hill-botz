@@ -50,7 +50,7 @@ client.on('message', message => {
       color: 0x0099ff,
       title: `Help Command`,
       description: `
-      Current commands list:
+      Current command list:
 
       - \`help\` - Show all commands
       - \`ping\` - Ping!
@@ -60,10 +60,10 @@ client.on('message', message => {
         Usage : \`prune <number of message>\`
 
       - \`en\` - Encrypt Message
-        Usage : \`en [$<4 letter of key>] <message>\`
+        Usage : \`en [$\{4 letter of key\}] <message>\`
         
         - \`dec\` - Decrypt Message
-        Usage : \`dec [$<4 letter of key>] <message>\`
+        Usage : \`dec [$\{4 letter of key>\}] <message>\`
       
       Use prefix \`h.\`!
       Paremeter in \`[param]\` is optional
